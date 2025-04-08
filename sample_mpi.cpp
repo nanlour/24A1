@@ -170,7 +170,7 @@ int main(int argc, char *argv[]) {
 
     auto end_time = std::chrono::steady_clock::now();
     std::chrono::duration<double> elapsed = end_time - start_time;
-    std::cout << "Total time: " << elapsed.count() << " seconds" << std::endl;
+    std::cout << std::endl << "Total time: " << elapsed.count() << " seconds" << std::endl;
   }
 
   MPI_Finalize();

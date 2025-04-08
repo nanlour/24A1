@@ -25,6 +25,8 @@ int main(int argc, char* argv[]) {
   std::unordered_map<int64_t, double> id_s;
   std::unordered_map<int64_t, std::string> id_name;
 
+  auto start_time = std::chrono::steady_clock::now();
+
   auto error = parser.parse_many(json).get(stream);
   for (auto doc : stream) {
     int64_t id = strtoull(doc["doc"]["account"]["id"].get_c_str(), nullptr, 10);
@@ -101,6 +103,10 @@ int main(int argc, char* argv[]) {
     auto &p = q4[i];
     std::cout << i + 1 << "st saddest people is id:" << p.second << " "<< id_name[p.second] << " with score: " << p.first  << std::endl;
   }
+
+  auto end_time = std::chrono::steady_clock::now();
+  std::chrono::duration<double> elapsed = end_time - start_time;
+  std::cout << std::endl << "Total time: " << elapsed.count() << " seconds" << std::endl;
 
   return 0;
 }

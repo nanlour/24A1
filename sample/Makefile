@@ -5,7 +5,7 @@ INCLUDE_DIR = $(SIMDJSON_DIR)
 
 all: sample
 
-sample: sample.cpp $(SIMDJSON_DIR)/simdjson.cpp ../config.h
+sample: sample.cpp $(SIMDJSON_DIR)/simdjson.cpp config.h
 	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -o $@ $^ $(LDFLAGS)
 
 clean:

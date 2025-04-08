@@ -11,7 +11,11 @@ debug: CXXFLAGS = $(DEBUGFLAGS)
 debug: sample_mpi
 
 sample_mpi: sample_mpi.cpp $(SIMDJSON_DIR)/simdjson.cpp
+	rm -f *.tmp
 	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -o $@ $^ $(LDFLAGS)
 
 clean:
 	rm -f sample_mpi *.o *.tmp
+
+tmp_clean:
+	rm -f *.tmp

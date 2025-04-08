@@ -4,7 +4,7 @@
 #include <array>
 #include <utility>
 #include <limits>
-#include "../config.h"
+#include "config.h"
 #include "../simdjson/simdjson.h"
 
 

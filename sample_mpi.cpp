@@ -27,7 +27,7 @@ const int HOUR_MASK = (1 << 5) - 1;
 
 const std::string CHUNK_PATH = "./chunks.tmp";
 const std::string PARSE_PATH = "./PARSE";
-std::string JSON_PATH;
+const std::string JSON_PATH = "/home/rongwang/mastodon-144g.ndjson";
 
 int parse_chunks(int world_size, int rank, std::vector<std::pair<size_t, size_t>> &file_blocks);
 std::pair<size_t, size_t> parse(simdjson::dom::parser &parser, char *file_buffer, size_t len, char *result_buffer);
@@ -48,8 +48,6 @@ int main(int argc, char *argv[]) {
   MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
   auto start_time = std::chrono::steady_clock::now();
-
-  JSON_PATH = std::string(argv[1]);
 
   // Master
   if (world_rank == 0) {

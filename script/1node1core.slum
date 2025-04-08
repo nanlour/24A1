@@ -1,0 +1,12 @@
+#!/bin/bash
+# Many of these are defaults for illustration – they are not needed!
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=1
+# This one is needed, as the default walltime is 10 minutes!
+#SBATCH --time=01:00:00
+#SBATCH --job-name=RONGWANG_1node_1cores
+
+make clean
+make
+mpiexec ./sample_mpi

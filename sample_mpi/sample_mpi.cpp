@@ -1,6 +1,7 @@
 #include <mpi.h>
 #include <iostream>
 #include <unistd.h>
+#include "../simdjson/simdjson.h"
 #include "../separator.h"
 #include "file.h"
 
@@ -24,9 +25,9 @@ const int HOUR_MASK = (1 << 5) - 1;
 
 const std::string CHUNK_PATH = "./chunks.tmp";
 const std::string PARSE_PATH = "./PARSE";
-std::string JSON_PATH;
+std::string JSON_PATH = "/workspaces/ubuntu/24A1/jsons/16m.ndjson";
 
-std::pair<size_t, size_t> parse(simdjson::parser &parser, char *file_buffer, size_t len, char *result_buffer);
+std::pair<size_t, size_t> parse(simdjson::dom::parser &parser, char *file_buffer, size_t len, char *result_buffer);
 
 int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
@@ -39,8 +40,8 @@ int main(int argc, char *argv[]) {
 
   // Master
   if (world_rank == 0) {
-    JSON_PATH = std::string(argv[1]);
-    std::vector<std::pair<size_t, size_t>> file_blocks {seperator::calculate__offsets(PATH, TASK_SIZE)};
+    // JSON_PATH = std::string(argv[1]);
+    std::vector<std::pair<size_t, size_t>> file_blocks {seperator::calculate__offsets(JSON_PATH, TASK_SIZE)};
     write_file_blocks_to_file(file_blocks, CHUNK_PATH);
   }
 
@@ -48,9 +49,9 @@ int main(int argc, char *argv[]) {
 
   std::vector<std::pair<size_t, size_t>> file_blocks = read_file_blocks_from_file(CHUNK_PATH);
 
-  std::unique_ptr<char[]> file_buffer = new char[FILE_BUFFER_SIZE];
-  std::unique_ptr<char[]> result_buffer = new char[FILE_BUFFER_SIZE];
-  simdjson::parser parser;
+  std::unique_ptr<char[]> file_buffer {new char[FILE_BUFFER_SIZE]};
+  std::unique_ptr<char[]> result_buffer {new char[FILE_BUFFER_SIZE]};
+  simdjson::dom::parser parser;
 
   for (int i = 0; i < file_blocks.size(); i++) {
     if (i % (world_rank + 1)) {
@@ -59,8 +60,9 @@ int main(int argc, char *argv[]) {
 
     // Read file
     size_t offset = file_blocks[i].first, len = file_blocks[i].second;
-    int fd = open(PATH.c_str(), O_RDONLY);
-    ssize_t bytes_read = pread(fd, file_buffer, len, offset);
+    int fd = open(JSON_PATH.c_str(), O_RDONLY);
+    ssize_t bytes_read = pread(fd, file_buffer.get(), len, offset);
+    close(fd);
     if (bytes_read != len) {
       std::cerr << "Json file read fail" << std::endl;
     }
@@ -68,13 +70,13 @@ int main(int argc, char *argv[]) {
     // Parse json
     auto result_size = parse(parser, file_buffer.get(), len, result_buffer.get());
 
-    std::string result_file_path = PARSE_PATH + std::to_string(i) + "tmp";
+    std::string result_file_path = PARSE_PATH + std::to_string(i) + ".tmp";
     std::ofstream result_file(result_file_path, std::ios::binary);
     if (!result_file) {
       std::cerr << "Failed to open file for writing: " << result_file_path << std::endl;
       continue;
     }
-    result_file.write(&result_size.first, sizeof(size_t));
+    result_file.write(reinterpret_cast<const char *>(&result_size.first), sizeof(size_t));
     result_file.write(result_buffer.get(), result_size.second);
     result_file.close();
   }
@@ -85,37 +87,27 @@ int main(int argc, char *argv[]) {
   return 0;
 }
 
-std::pair<size_t, size_t> parse(simdjson::parser &parser, char *file_buffer, size_t len, char *result_buffer) {
+std::pair<size_t, size_t> parse(simdjson::dom::parser &parser, char *file_buffer, size_t len, char *result_buffer) {
   simdjson::dom::document_stream stream;
-  if (parser_.parse_many(file_buffer, len, simdjson::dom::DEFAULT_BATCH_SIZE).get(stream) != simdjson::SUCCESS) {
+  if (parser.parse_many(file_buffer, len, simdjson::dom::DEFAULT_BATCH_SIZE).get(stream) != simdjson::SUCCESS) {
     std::cerr << "parse failed" << std::endl;
     return {0, 0};
   }
-
-  date_score_buffer ds_buffer;
-  ds_buffer.reserve(PARSE_BUFFER_SIZE);
-  id_score_buffer is_buffer;
-  is_buffer.reserve(PARSE_BUFFER_SIZE);
-  id_name_buffer in_buffer;
-  in_buffer.reserve(PARSE_BUFFER_SIZE);
 
   // store parse result
   size_t count = 0;
   char* buffer_start = result_buffer;
   for (auto doc : stream) {
     ++count;
-    #ifdef DEBUG
-    debug_counter++;
-    #endif
-    int64_t id = strtoull(doc["doc"]["account"]["id"].get_c_str(), nullptr, 10);
+    size_t id = strtoull(doc["doc"]["account"]["id"].get_c_str(), nullptr, 10);
 
     int year, month, day, hour;
     std::sscanf(doc["doc"]["createdAt"].get_c_str(), "%d-%d-%dT%d", &year, &month, &day, &hour);
-    int date = (year << ccc::YEAR_OFFSET) + (month << ccc::MONTH_OFFSET) + (day << ccc::DAY_OFFSET) + (hour << ccc::HOUR_OFFSET);
+    int date = (year << YEAR_OFFSET) + (month << MONTH_OFFSET) + (day << DAY_OFFSET) + (hour << HOUR_OFFSET);
 
     double score;
     auto error = doc["doc"]["sentiment"].get_double().get(score);
-    if (e != simdjson::SUCCESS) {
+    if (error != simdjson::SUCCESS) {
       score = 0;
     }
 
@@ -123,13 +115,13 @@ std::pair<size_t, size_t> parse(simdjson::parser &parser, char *file_buffer, siz
     doc["doc"]["account"]["username"].get_string().get(username);
 
     // Copy result to buffer
-    *static_cast<size_t *>(result_buffer) = id;
+    *reinterpret_cast<size_t *>(result_buffer) = id;
     result_buffer += sizeof(size_t);
-    *static_cast<int *>(result_buffer) = date;
+    *reinterpret_cast<int *>(result_buffer) = date;
     result_buffer += sizeof(int);
-    *static_cast<double *>(result_buffer) = score;
+    *reinterpret_cast<double *>(result_buffer) = score;
     result_buffer += sizeof(double);
-    *static_cast<size_t *>(result_buffer) = username.size();
+    *reinterpret_cast<size_t *>(result_buffer) = username.size();
     result_buffer += sizeof(size_t);
     std::memcpy(result_buffer, username.data(), username.size());
     result_buffer += username.size();

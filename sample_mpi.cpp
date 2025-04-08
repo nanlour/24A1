@@ -182,7 +182,7 @@ int parse_chunks(int world_size, int rank, std::vector<std::pair<size_t, size_t>
   std::unique_ptr<char[]> result_buffer {new char[FILE_BUFFER_SIZE]};
   simdjson::dom::parser parser;
 
-  for (int i = 0; i < file_blocks.size(); i++) {
+  for (size_t i = 0; i < file_blocks.size(); i++) {
     if (i % world_size != rank) {
       continue;
     }
@@ -192,7 +192,7 @@ int parse_chunks(int world_size, int rank, std::vector<std::pair<size_t, size_t>
     int fd = open(JSON_PATH.c_str(), O_RDONLY);
     ssize_t bytes_read = pread(fd, file_buffer.get(), len, offset);
     close(fd);
-    if (bytes_read != len) {
+    if (static_cast<size_t>(bytes_read) != len) {
       std::cerr << "Json file read fail" << std::endl;
     }
 
@@ -224,21 +224,25 @@ std::pair<size_t, size_t> parse(simdjson::dom::parser &parser, char *file_buffer
   size_t count = 0;
   char* buffer_start = result_buffer;
   for (auto doc : stream) {
-    ++count;
-    size_t id = strtoull(doc["doc"]["account"]["id"].get_c_str(), nullptr, 10);
+    const char *id_char = "";
+    auto error_id = doc["doc"]["account"]["id"].get_c_str().get(id_char);
+    size_t id = strtoull(id_char, nullptr, 10);
 
     int year, month, day, hour;
-    std::sscanf(doc["doc"]["createdAt"].get_c_str(), "%d-%d-%dT%d", &year, &month, &day, &hour);
+    const char *date_char = "";
+    auto error_date = doc["doc"]["createdAt"].get_c_str().get(date_char);
+    std::sscanf(date_char, "%d-%d-%dT%d", &year, &month, &day, &hour);
     size_t date = (year << YEAR_OFFSET) + (month << MONTH_OFFSET) + (day << DAY_OFFSET) + (hour << HOUR_OFFSET);
 
-    double score;
-    auto error = doc["doc"]["sentiment"].get_double().get(score);
-    if (error != simdjson::SUCCESS) {
-      score = 0;
-    }
+    double score = 0;
+    auto error_score = doc["doc"]["sentiment"].get_double().get(score);
 
     std::string_view username;
-    doc["doc"]["account"]["username"].get_string().get(username);
+    auto error_name = doc["doc"]["account"]["username"].get_string().get(username);
+
+    if (error_id != simdjson::SUCCESS || error_date != simdjson::SUCCESS || error_score != simdjson::SUCCESS || error_name != simdjson::SUCCESS) {
+      continue;
+    }
 
     // Copy result to buffer
     *reinterpret_cast<size_t *>(result_buffer) = id;
@@ -251,6 +255,8 @@ std::pair<size_t, size_t> parse(simdjson::dom::parser &parser, char *file_buffer
     result_buffer += sizeof(size_t);
     std::memcpy(result_buffer, username.data(), username.size());
     result_buffer += username.size();
+
+    ++count;
   }
 
   return {count, result_buffer - buffer_start};

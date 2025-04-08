@@ -1,4 +1,4 @@
-CXX =mpicxx
+CXX = mpicxx
 CXXFLAGS = -std=c++17 -O2 -Wall -Wextra -pedantic
 SIMDJSON_DIR = ./simdjson
 INCLUDE_DIR = $(SIMDJSON_DIR)

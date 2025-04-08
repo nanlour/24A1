@@ -49,9 +49,10 @@ int main(int argc, char *argv[]) {
 
   auto start_time = std::chrono::steady_clock::now();
 
+  JSON_PATH = std::string(argv[1]);
+
   // Master
   if (world_rank == 0) {
-    JSON_PATH = std::string(argv[1]);
     std::vector<std::pair<size_t, size_t>> file_blocks {seperator::calculate__offsets(JSON_PATH, TASK_SIZE)};
     write_file_blocks_to_file(file_blocks, CHUNK_PATH);
   }

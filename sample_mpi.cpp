@@ -61,8 +61,11 @@ int main(int argc, char *argv[]) {
   MPI_Barrier(MPI_COMM_WORLD);
 
   if (world_rank == 0) {
-    sum_result(file_blocks.size());
     auto end_time = std::chrono::steady_clock::now();
+    std::chrono::duration<double> elapsed = end_time - start_time;
+    std::cout << std::endl << "Prase time: " << elapsed.count() << " seconds" << std::endl;
+    sum_result(file_blocks.size());
+    end_time = std::chrono::steady_clock::now();
     std::chrono::duration<double> elapsed = end_time - start_time;
     std::cout << std::endl << "Total time: " << elapsed.count() << " seconds" << std::endl;
   }

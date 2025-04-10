@@ -1,0 +1,30 @@
+Executing script: 1node8core.slum
+rm -f sample_mpi *.o *.tmp
+rm -f *.tmp
+mpicxx -std=c++17 -O2 -I./simdjson -o sample_mpi sample_mpi.cpp simdjson/simdjson.cpp 
+The happiest hour are:
+1st happiest hour is 2025.1.1 at 0 with score: 206.152
+2st happiest hour is 2024.12.31 at 23 with score: 187.465
+3st happiest hour is 2025.1.1 at 5 with score: 135.925
+4st happiest hour is 2024.12.24 at 22 with score: 117.286
+5st happiest hour is 2024.12.25 at 15 with score: 114.602
+The saddest hour are:
+1st saddest hour is 2024.11.6 at 7 with score: -373.767
+2st saddest hour is 2024.9.11 at 1 with score: -305.576
+3st saddest hour is 2025.1.30 at 17 with score: -256.568
+4st saddest hour is 2025.1.30 at 18 with score: -226.91
+5st saddest hour is 2025.2.3 at 16 with score: -223.833
+The happiest people are:
+1st happiest people is id:110237351908820391 gameoflife with score: 9105.74
+2st happiest people is id:112728392129924952 TheFigen_ with score: 2541.47
+3st happiest people is id:113441357479871732 EmojiAquarium with score: 2086.46
+4st happiest people is id:113541715572887376 choochoo with score: 1978.74
+5st happiest people is id:110006430181118061 hnbot with score: 1917.79
+The saddest people are:
+1st saddest people is id:109521050152429017 realTuckFrumper with score: -9094.08
+2st saddest people is id:109471254002284799 uavideos with score: -5901.96
+3st saddest people is id:113443732887173058 TheHindu with score: -5710.72
+4st saddest people is id:111873606251312850 uutisbot with score: -4066.14
+5st saddest people is id:112071598249945636 MissingYou with score: -3341.6
+
+Total time: 43.9447 seconds

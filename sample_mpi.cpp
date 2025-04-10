@@ -27,12 +27,12 @@ const int HOUR_MASK = (1 << 5) - 1;
 
 const std::string CHUNK_PATH = "./chunks.tmp";
 const std::string PARSE_PATH = "./PARSE";
-std::string JSON_PATH;
+const std::string JSON_PATH = "/home/rongwang/mastodon-144g.ndjson";
 
-auto parse_chunks(int world_size, int rank, std::vector<std::pair<size_t, size_t>> &file_blocks) -> int;
-auto parse(simdjson::dom::parser &parser, char *file_buffer, size_t len, char *result_buffer) -> std::pair<size_t, size_t>;
-auto sum_result(size_t file_blocks_size) -> void;
-auto get_time(size_t date, int &year,int &month, int &day, int &hour) -> void;
+inline auto parse_chunks(int world_size, int rank, std::vector<std::pair<size_t, size_t>> &file_blocks) -> int;
+inline auto parse(simdjson::dom::parser &parser, char *file_buffer, size_t len, char *result_buffer) -> std::pair<size_t, size_t>;
+inline auto sum_result(size_t file_blocks_size) -> void;
+inline auto get_time(size_t date, int &year,int &month, int &day, int &hour) -> void;
 
 int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
@@ -44,8 +44,6 @@ int main(int argc, char *argv[]) {
   MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
   auto start_time = std::chrono::steady_clock::now();
-
-  JSON_PATH = std::string(argv[1]);
 
   // Master
   if (world_rank == 0) {
@@ -73,7 +71,7 @@ int main(int argc, char *argv[]) {
   return 0;
 }
 
-void sum_result(size_t file_blocks_size) {
+inline void sum_result(size_t file_blocks_size) {
   std::unordered_map<int64_t, double> d_s;
   std::unordered_map<int64_t, double> id_s;
   std::unordered_map<int64_t, std::string> id_name;
@@ -151,12 +149,12 @@ void sum_result(size_t file_blocks_size) {
     }
   }
   
-  std::cout << "The happest hour are:" << std::endl;
+  std::cout << "The happiest hour are:" << std::endl;
   for (size_t i = 0; i < q1.size() - 1; i++) {
     auto &p = q1[i];
     int year, month, day, hour;
     get_time(p.second, year, month, day, hour);
-    std::cout << i + 1 << "st happest hour is " << year << "." << month << "." << day << " at " << hour << " with score: " << p.first << std::endl;
+    std::cout << i + 1 << "st happiest hour is " << year << "." << month << "." << day << " at " << hour << " with score: " << p.first << std::endl;
   }
 
   std::cout << "The saddest hour are:" << std::endl;
@@ -164,13 +162,13 @@ void sum_result(size_t file_blocks_size) {
     auto &p = q2[i];
     int year, month, day, hour;
     get_time(p.second, year, month, day, hour);
-    std::cout << i + 1 << "st saddest hour is " << year << "." << month << "." << day << " at " << p.first << std::endl;
+    std::cout << i + 1 << "st saddest hour is " << year << "." << month << "." << day << " at " << hour << " with score: " << p.first << std::endl;
   }
 
-  std::cout << "The happest people are:" << std::endl;
+  std::cout << "The happiest people are:" << std::endl;
   for (size_t i = 0; i < q3.size() - 1; i++) {
     auto &p = q3[i];
-    std::cout << i + 1 << "st happest people is id:" << p.second << " "<< id_name[p.second] << " with score: " << p.first  << std::endl;
+    std::cout << i + 1 << "st happiest people is id:" << p.second << " "<< id_name[p.second] << " with score: " << p.first  << std::endl;
   }
 
   std::cout << "The saddest people are:" << std::endl;
@@ -181,7 +179,7 @@ void sum_result(size_t file_blocks_size) {
 
 }
 
-int parse_chunks(int world_size, int rank, std::vector<std::pair<size_t, size_t>> &file_blocks) {
+inline int parse_chunks(int world_size, int rank, std::vector<std::pair<size_t, size_t>> &file_blocks) {
   std::unique_ptr<char[]> file_buffer {new char[FILE_BUFFER_SIZE]};
   std::unique_ptr<char[]> result_buffer {new char[FILE_BUFFER_SIZE]};
   simdjson::dom::parser parser;
@@ -217,7 +215,7 @@ int parse_chunks(int world_size, int rank, std::vector<std::pair<size_t, size_t>
   return 0;
 }
 
-std::pair<size_t, size_t> parse(simdjson::dom::parser &parser, char *file_buffer, size_t len, char *result_buffer) {
+inline std::pair<size_t, size_t> parse(simdjson::dom::parser &parser, char *file_buffer, size_t len, char *result_buffer) {
   simdjson::dom::document_stream stream;
   if (parser.parse_many(file_buffer, len, simdjson::dom::DEFAULT_BATCH_SIZE).get(stream) != simdjson::SUCCESS) {
     std::cerr << "parse failed" << std::endl;
@@ -266,7 +264,7 @@ std::pair<size_t, size_t> parse(simdjson::dom::parser &parser, char *file_buffer
   return {count, result_buffer - buffer_start};
 }
 
-void get_time(size_t date, int &year,int &month, int &day, int &hour) {
+inline void get_time(size_t date, int &year,int &month, int &day, int &hour) {
   year = (date >> YEAR_OFFSET) & YEAR_MASK;
   month = (date >> MONTH_OFFSET)& MONTH_MASK;
   day = (date >> DAY_OFFSET) & DAY_MASK;
